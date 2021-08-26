@@ -1,0 +1,6 @@
+*.txt
+*.tar
+Dataset/
+Dataset1/
+results/
+logs/

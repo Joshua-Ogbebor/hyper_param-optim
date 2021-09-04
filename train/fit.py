@@ -13,13 +13,14 @@ from pytorch_lightning.plugins import DDPPlugin
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
-####### fit inception net using Asha schediler, or **** #######
+####### fit inception net using ASHA scheduler, or random search  #######
+
 def train_fn_inc(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
+   
     dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)
-
     model = inception_net.Googlenet_Classifier(config,  dm.num_classes, data_dir)
-
     metrics = {"loss": "val_loss", "acc": "val_accuracy"}
+
     trainer = pl.Trainer(
         max_epochs=num_epochs,
         gpus=num_gpus,
@@ -29,16 +30,16 @@ def train_fn_inc(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epo
         accelerator='ddp',
         plugins=DDPPlugin(find_unused_parameters=False),
         callbacks=[TuneReportCallback(metrics, on="validation_end")])
+
     trainer.fit(model, dm)
 
     
-###### fit resnet 
+###### fit resnet using ASHA scheduler, or random search ####
+
 def train_fn_res(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
 
     dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)
-
     model = residual_net.Resnet_Classifier(config, dm.num_classes, data_dir)
-
     metrics = {"loss": "val_loss", "acc": "val_accuracy"}
 
     trainer = pl.Trainer(
@@ -50,13 +51,15 @@ def train_fn_res(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epo
         accelerator='ddp',
         plugins=DDPPlugin(find_unused_parameters=False),
         callbacks=[TuneReportCallback(metrics, on="validation_end")])
+
     trainer.fit(model, dm)
 
 
 ###### fit inception net using PBT scheduler ######
+
 def train_fn_inc_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
-    dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)
-    
+
+    dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)    
     metrics = {"loss": "val_loss", "acc": "val_accuracy"}
     
     kwargs = {
@@ -72,8 +75,8 @@ def train_fn_inc_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num
                 filename="checkpoint",
                 on="validation_end")
         ]
-        #"accelerator":'ddp',
-        #"plugins":DDPPlugin(find_unused_parameters=False),
+        "accelerator":'ddp',
+        "plugins":DDPPlugin(find_unused_parameters=False),
     }
 
     if checkpoint_dir:
@@ -88,6 +91,7 @@ def train_fn_inc_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num
     
     
 ###### fit resnet using PBT scheduler ########    
+
 def train_fn_res_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
 
     dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)
@@ -106,8 +110,8 @@ def train_fn_res_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num
                 filename="checkpoint",
                 on="validation_end")
         ]
-        #"accelerator":'ddp',
-        #"plugins":DDPPlugin(find_unused_parameters=False),
+        "accelerator":'ddp',
+        "plugins":DDPPlugin(find_unused_parameters=False),
     }
 
     if checkpoint_dir:

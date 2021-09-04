@@ -14,3 +14,6 @@ The Dataset should be located in a folder and its path properly identified as an
 The models to be optimized should be accordingly made configurable. The data loaders should also be in the same fashion. These codes were tested with models and dataloaders in pytorchlightning.
 
 I plan to include the models and dataloader in a future commit.
+
+# Dependencies
+The code is written in python, and uses pytorch, pytorchlightning and ray tune.  

@@ -4,3 +4,7 @@ Dataset/
 Dataset1/
 results/
 logs/
+*deprecated.py
+*.ipynb
+__pycache__/
+pbt/

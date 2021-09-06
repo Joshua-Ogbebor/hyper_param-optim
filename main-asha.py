@@ -28,6 +28,11 @@ def main (num_samples=40, num_epochs=50, gpus_per_trial =1, folder="Dataset"):
         "depth":tune.choice([1,2,3]),
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size":tune.choice([16,32,48]),
+        "opt": tune.choince(['adam','sgd', 'adadelta']),
+        "b1": ,
+        "b2": ,
+        "rho": ,
+        "eps":
     }
     config_res = {
 
@@ -51,6 +56,11 @@ def main (num_samples=40, num_epochs=50, gpus_per_trial =1, folder="Dataset"):
         "depth_4":0,
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size":tune.choice([32, 64, 128]),
+         "opt": ,
+        "b1": ,
+        "b2": ,
+        "rho": ,
+        "eps":
     }
 
 

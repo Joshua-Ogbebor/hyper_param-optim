@@ -14,7 +14,7 @@ import torchmetrics
 from ray import tune
 
 
-def main (num_samples=40, num_epochs=50, gpus_per_trial =1, folder="Dataset"):
+def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None):
     os.environ["SLURM_JOB_NAME"] = "bash"
     data_dir = os.path.join(os.getcwd(), folder)
         
@@ -62,33 +62,49 @@ def main (num_samples=40, num_epochs=50, gpus_per_trial =1, folder="Dataset"):
         "rho": ,
         "eps":
     }
-
-
+    
     
     ######## ASHA Scheduler #################
-    scheduler = ASHAScheduler(
+    scheduler_a = ASHAScheduler(
         max_t=num_epochs,
         metric="loss",
         mode="min",
         grace_period=1,
         reduction_factor=2)
+    ######## PBT Scheduler ##################
+    scheduler_p = PopulationBasedTraining(
+        perturbation_interval=4,
+        hyperparam_mutations={
+            "lr": tune.loguniform(1e-4, 1e-1),
+            "mm":[0.6,0.9,1.2],
+            "dp":[0,0.9,0.995],
+            "wD":[0.000008,0.00001,0.00003 ],
+            "batch_size": [32, 48]
+        },
+        metric="loss",
+        mode="min"
+        )
+    ###### switcher ##########
+    scheduler_switch={
+        "asha":scheduler_a,
+        "pbt":scheduler_pbt
+    }
     
     ######### Reporters ########
-    reporter_res = CLIReporter(
-        parameter_columns=["bloc_1", "bloc_2", "lr", "batch_size"],
-        metric_columns=["loss", "mean_accuracy", "training_iteration"])
+    #reporter_res = CLIReporter(
+     #   parameter_columns=["bloc_1", "bloc_2", "lr", "batch_size"],
+     #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
 
-    reporter_inc = CLIReporter(
-        parameter_columns=["layer_1_size", "layer_2_size", "lr", "batch_size"],
-        metric_columns=["loss", "mean_accuracy", "training_iteration"])
+    #reporter_inc = CLIReporter(
+     #   parameter_columns=["layer_1_size", "layer_2_size", "lr", "batch_size"],
+     #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
     
     ######### tune.with_parameters inception net #######
     trainable1 = tune.with_parameters(
-        fit.train_fn_inc,
+        fit.train_fn,
         data_dir=data_dir,
         num_epochs=num_epochs,
         num_gpus=1)
-
     analysis = tune.run(
         trainable1,
         resources_per_trial={
@@ -98,36 +114,20 @@ def main (num_samples=40, num_epochs=50, gpus_per_trial =1, folder="Dataset"):
         local_dir="../analysis/results",
         #verbose=2,
         config=config_inc,
-        scheduler=scheduler,
+        model_arch=arch,
+        scheduler=scheduler_switch[optim] if optim,
+        metric="loss" if not optim,
+        mode="min" if not optim,
         #progress_reporter=reporter_inc,
         num_samples=num_samples,
-        name="tune-inc-asha")
-
-    print(analysis.best_config)
-    
-    ####### tune.with_parameters resnet #######
-    trainable2 = tune.with_parameters(
-        fit.train_fn_res,
-        data_dir=data_dir,
-        num_epochs=num_epochs,
-        num_gpus=1)
-
-    analysis = tune.run(
-        trainable2,
-        resources_per_trial={
-            #"cpu": 4,
-            "gpu": 1
-        },
-        local_dir="../analysis/results",
-        config=config_res,
-        #verbose=2,
-        scheduler=scheduler,
-        #progress_reporter=reporter_res,
-        num_samples=num_samples,
-        name="tune-res-asha")
+        name="tune-"+arch+"-"+optim)
 
     print(analysis.best_config)
 
 
 if __name__ == "__main__":
-    main(num_samples=40, num_epochs=35, gpus_per_trial=2, folder="Dataset")
+    main(num_samples=40, num_epochs=35, folder="Dataset", arch='res', optim="asha")
+    main(num_samples=40, num_epochs=35, folder="Dataset", arch='inc', optim='asha')
+    #main(num_samples=40, num_epochs=35, folder="Dataset", arch='alex', opt='asha')
+    #main(num_samples=40, num_epochs=35, folder="Dataset", arch='vgg', opt='asha')
+

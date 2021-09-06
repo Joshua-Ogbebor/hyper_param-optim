@@ -15,7 +15,10 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 def model_name (model_arch):
    {'inc':inception_net.Googlenet_classifier,
-    'res':residual_net.Resnet_classifier}
+    'res':residual_net.Resnet_classifier,
+    'alex': ,
+    'vgg': 
+   }
    return model[model_arch]
 ####### fit net using ASHA scheduler, or random search  #######
 

@@ -66,9 +66,9 @@ class Googlenet_Classifier(pl.LightningModule):
         self.losss = nn.CrossEntropyLoss()
         self.num_classes=n_classes
         self.depth=config["depth"]
-        self.betas=(config[""],config[""])
-        self.eps=config[""]
-        self.rho=config[""]
+        self.betas=(config["b1"],config["b2"])
+        self.eps=config["eps"]
+        self.rho=config["rho"]
         self._create_network()
         self._init_params()
         

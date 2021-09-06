@@ -19,7 +19,7 @@ def model_name (model_arch):
    return model[model_arch]
 ####### fit net using ASHA scheduler, or random search  #######
 
-def train_fn_asha(config, model_arch, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0, checkpoint_dir=None):
+def train_fn(config, model_arch, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0, checkpoint_dir=None):
    dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)
    model = model_name(model_arch)(config,  dm.num_classes, data_dir)
    metrics = {"loss": "val_loss", "acc": "val_accuracy"}

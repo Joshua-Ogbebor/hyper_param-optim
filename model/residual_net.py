@@ -25,10 +25,19 @@ class Resnet_Classifier(pl.LightningModule):
         self.depths=[config["depth_1"],config["depth_2"],config["depth_3"],config["depth_4"]]
         self.encoder = ResNetEncoder(in_channels,  blocks_sizes=self.block_sizes, depths=self.depths, activation=self.actvn )
         self.decoder = ResnetDecoder(self.encoder.blocks[-1].blocks[-1].expanded_channels, n_classes)
-               
+        self.betas=(config["b1"],config["b2"])
+        self.eps=config["eps"]
+        self.rho=config["rho"]     
         self.accuracy = torchmetrics.Accuracy()        
         self.losss = nn.CrossEntropyLoss()
-
+        
+    def configure_optimizers(self):
+        optim={
+            'sgd':torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay),
+            'adam':torch.optim.adam(self.parameters(), lr=self.lr, betas=self.betas, eps=self.eps, weight_decay=self.wghtDcay),
+            'adadelta':torch.optim.Adadelta(self.parameters(), lr=self.lr, rho=self.rho, eps=self.eps, weight_decay=self.wghtDcay)
+        }
+        return optim[self.optim_name]
 
     def forward(self, x):
         #batch_size, channels, width, height = x.size()
@@ -38,8 +47,8 @@ class Resnet_Classifier(pl.LightningModule):
         #x = torch.log_softmax(x, dim=1)
         return x
 
-    def configure_optimizers(self):
-        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay)
+    #def configure_optimizers(self):
+        #return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay)
 
     def training_step(self, train_batch, batch_idx):
         x, y = train_batch

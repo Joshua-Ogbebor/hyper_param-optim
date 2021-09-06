@@ -4,21 +4,17 @@ from model.residual_net import Resnet_Classifier
 from train import fit
 import torch
 import os
-
-from ray.tune import CLIReporter
+#from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
 import torchmetrics
-
-#from ray.tune.integration.pytorch_lightning import TuneReportCallback
-#import tempfile
 from ray import tune
 
 
 def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None):
     os.environ["SLURM_JOB_NAME"] = "bash"
     data_dir = os.path.join(os.getcwd(), folder)
-        
-    ######## Config for resnet and inception  net ############
+       
+    ######## Config for architectures ############
     config_inc = {
 
         "lr": tune.loguniform(1e-4, 1e-1),
@@ -84,7 +80,7 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         metric="loss",
         mode="min"
         )
-    ###### switcher ##########
+    ###### scheduler switcher ##########
     scheduler_switch={
         "asha":scheduler_a,
         "pbt":scheduler_pbt

@@ -1,4 +1,7 @@
 """
+Edited by Joshua-Ogbebor
+"""
+"""
 Created on Mon May 20 20:32:37 2019
 @author: kc
 """
@@ -7,12 +10,9 @@ from types import SimpleNamespace
 
 import torch
 import torch.nn as nn
-
 from functools import partial
 #from dataclasses import dataclass
 from collections import OrderedDict
-
-
 from torch.nn import functional as F
 import pytorch_lightning as pl
 import os
@@ -45,8 +45,8 @@ depth_n_features={
                 6:128,
                 7:128,
                 8:128
-                
-            }
+}
+
 
 
 
@@ -59,19 +59,27 @@ class Googlenet_Classifier(pl.LightningModule):
         self.momentum = config["mm"]
         self.damp = config["dp"]
         self.wghtDcay = config["wD"]
-        
+        self.optim_name=config["opt"]
         self.act_fn_name= config["actvn"]
         self.act_fn=act_fn_by_name[self.act_fn_name]               
         self.accuracy = torchmetrics.Accuracy()        
         self.losss = nn.CrossEntropyLoss()
         self.num_classes=n_classes
         self.depth=config["depth"]
+        self.betas=(config[""],config[""])
+        self.eps=config[""]
+        self.rho=config[""]
         self._create_network()
         self._init_params()
-
+        
 
     def configure_optimizers(self):
-        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay)
+        optim={
+            'sgd':torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay),
+            'adam':torch.optim.adam(self.parameters(), lr=self.lr, betas=self.betas, eps=self.eps, weight_decay=self.wghtDcay),
+            'adadelta':torch.optim.Adadelta(self.parameters(), lr=self.lr, rho=self.rho, eps=self.eps, weight_decay=self.wghtDcay)
+        }
+        return optim[self.optim_name]
 
     def training_step(self, train_batch, batch_idx):
         x, y = train_batch

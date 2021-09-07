@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from torch.utils.data import random_split, DataLoader
-
+import numpy as np
 
 class ImgData(pl.LightningDataModule):
      """ This class handles the Training and Validation dataset for data saved in a folder in the 
@@ -48,13 +48,7 @@ class ImgData(pl.LightningDataModule):
         self.dims = (3, 256, 256)
 
     def prepare_data(self):
-        list_dirs_full_init= [file.path for file in os.scandir(dataset_dir) if file.is_dir()]
-        i=0
-        list_dirs_init=[]
-        for dirs in list_dirs_full_init:
-            list_dirs_init.append(os.path.split(dirs)[1])
-            i=1+i
-        self.num_classes = self.list_data_info(list_dirs_full_init)
+        pass
         
     def setup(self, stage:str = 'fit'):
         data_full, _ = self.dataset
@@ -68,14 +62,52 @@ class ImgData(pl.LightningDataModule):
     
     def val_dataloader(self):
         return DataLoader(self.data_val,batch_size= self.batch_size, num_workers=self.num_workers)# , pin_memory=True)
-    
-    def dataset(self):
-        dataset = datasets.ImageFolder(
-            root=self.data_dir)
-            #transform= self.transform['train'], target_transform=self.target_to_oh)
-        return  dataset , dataset.classes
-    
+   
     def target_to_oh(self, target):
         one_hot = torch.eye(self.num_classes)[target]
         return one_hot
+     
+    def dataset(self):
+        dataset = datasets.ImageFolderNp(root=self.data_dir)
+            #transform= self.transform['train'], target_transform=self.target_to_oh)
+        return  dataset , dataset.classes
+
+class ImageFolderNp(datasets.ImageFolder):
+    """Custom dataset that uses Numpy instead. useful for large datasets.
+    Extends torchvision.datasets.ImageFolder
+    """
+    def __init__(self,
+            root: str,
+            transform: Optional[Callable] = None,
+            target_transform: Optional[Callable] = None,
+            loader: Callable[[str], Any] = default_loader,
+            is_valid_file: Optional[Callable[[str], bool]] = None,):
+        super(ImageFolder, self).__init__(root, loader, IMG_EXTENSIONS if is_valid_file is None else None,
+                                          transform=transform,
+                                          target_transform=target_transform,
+                                          is_valid_file=is_valid_file)
+        self.imgs=np.array(self.imgs)
+
+    # override the __getitem__ method. this is the method that dataloader calls
+    def __getitem__(self, index):
+        # this is what ImageFolder normally returns 
+        sample, target = np.array(super(ImageFolderNp, self).__getitem__(index))
+        # the image file path
+        #path = self.imgs[index][0]
+        # make a new tuple that includes original and the path
+        #tuple_with_path = (original_tuple + (path,))
+        return sample, target
+
     
+class DataIter(Dataset):
+    def __init__(self):
+        self.data_np = np.array([x for x in range(24000000)])
+        self.data = [x for x in range(24000000)]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        data = self.data[idx]
+        data = np.array([data], dtype=np.int64)
+        return torch.tensor(data)

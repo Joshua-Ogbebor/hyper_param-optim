@@ -76,7 +76,7 @@ class Googlenet_Classifier(pl.LightningModule):
     def configure_optimizers(self):
         optim={
             'sgd':torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay),
-            'adam':torch.optim.adam(self.parameters(), lr=self.lr, betas=self.betas, eps=self.eps, weight_decay=self.wghtDcay),
+            'adam':torch.optim.Adam(self.parameters(), lr=self.lr, betas=self.betas, eps=self.eps, weight_decay=self.wghtDcay),
             'adadelta':torch.optim.Adadelta(self.parameters(), lr=self.lr, rho=self.rho, eps=self.eps, weight_decay=self.wghtDcay)
         }
         return optim[self.optim_name]
@@ -84,7 +84,7 @@ class Googlenet_Classifier(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         x, y = train_batch
         logits = self.forward(x)
-        #loss = F.nll_loss(logits, y)
+        print(x,y,logits)
         
         y=y.long()
         loss=self.losss(logits,y)
@@ -97,7 +97,7 @@ class Googlenet_Classifier(pl.LightningModule):
     def validation_step(self, val_batch, batch_idx):
         x, y = val_batch
         logits = self.forward(x)
-        #loss = F.nll_loss(logits, y)
+        
         y=y.long()
         loss=self.losss(logits,y)
         

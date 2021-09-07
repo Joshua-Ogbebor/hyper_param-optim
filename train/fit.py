@@ -14,10 +14,10 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 
 def model_name (model_arch):
-   {'inc':inception_net.Googlenet_classifier,
-    'res':residual_net.Resnet_classifier,
-    'alex': ,
-    'vgg': 
+   model={'inc':inception_net.Googlenet_Classifier,
+    'res':residual_net.Resnet_Classifier,
+#    'alex': ,
+#    'vgg': 
    }
    return model[model_arch]
 ####### fit net using ASHA scheduler, or random search  #######
@@ -35,13 +35,13 @@ def train_fn(config, model_arch, data_dir=os.path.join(os.getcwd(), "Dataset") ,
       progress_bar_refresh_rate=0,
       accelerator='ddp',
       plugins=DDPPlugin(find_unused_parameters=False),
-      deterministic=True
+      deterministic=True,
       callbacks=[TuneReportCallback(metrics, on="validation_end")])
 
    trainer.fit(model, dm)
 
 ###### fit inception net using PBT scheduler ######
-def train_fn_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
+def train_fn_pbt(config,model_arch, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
    dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)    
    metrics = {"loss": "val_loss", "acc": "val_accuracy"}
    pl.seed_everything(42, workers=True)
@@ -57,14 +57,15 @@ def train_fn_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epo
               metrics=metrics,
               filename="checkpoint",
               on="validation_end")
-        ]
+        ],
       "accelerator":'ddp',
       "plugins":DDPPlugin(find_unused_parameters=False),
       "deterministic":True
     }
    if checkpoint_dir:
       kwargs["resume_from_checkpoint"] = os.path.join(checkpoint_dir, "checkpoint")
-   model = model_name(model_arch)(config,  dm.num_classes, data_dir)   trainer = pl.Trainer(**kwargs)
+   model = model_name(model_arch)(config,  dm.num_classes, data_dir)   
+   trainer = pl.Trainer(**kwargs)
    trainer.fit(model,dm)
     
     
@@ -88,7 +89,7 @@ def train_fn_res_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num
               metrics=metrics,
               filename="checkpoint",
               on="validation_end")
-        ]
+        ],
       "accelerator":'ddp',
       "plugins":DDPPlugin(find_unused_parameters=False),
       "deterministic":True

@@ -30,11 +30,12 @@ class Resnet_Classifier(pl.LightningModule):
         self.rho=config["rho"]     
         self.accuracy = torchmetrics.Accuracy()        
         self.losss = nn.CrossEntropyLoss()
-        
+        self.optim_name= config["opt"]
+ 
     def configure_optimizers(self):
         optim={
             'sgd':torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay),
-            'adam':torch.optim.adam(self.parameters(), lr=self.lr, betas=self.betas, eps=self.eps, weight_decay=self.wghtDcay),
+            'adam':torch.optim.Adam(self.parameters(), lr=self.lr, betas=self.betas, eps=self.eps, weight_decay=self.wghtDcay),
             'adadelta':torch.optim.Adadelta(self.parameters(), lr=self.lr, rho=self.rho, eps=self.eps, weight_decay=self.wghtDcay)
         }
         return optim[self.optim_name]

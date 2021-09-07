@@ -24,11 +24,11 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         "depth":tune.choice([1,2,3]),
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size":tune.choice([16,32,48]),
-        "opt": tune.choince(['adam','sgd', 'adadelta']),
-        "b1": ,
-        "b2": ,
-        "rho": ,
-        "eps":
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1":0.9 ,
+        "b2":0.999 ,
+        "eps":1e-08 ,
+        "rho":0.9
     }
     config_res = {
 
@@ -52,11 +52,11 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         "depth_4":0,
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size":tune.choice([32, 64, 128]),
-         "opt": ,
-        "b1": ,
-        "b2": ,
-        "rho": ,
-        "eps":
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1":0.9 ,
+        "b2":0.999 ,
+        "eps":1e-08 ,
+        "rho":0.9
     }
     
     
@@ -83,7 +83,7 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
     ###### scheduler switcher ##########
     scheduler_switch={
         "asha":scheduler_a,
-        "pbt":scheduler_pbt
+        "pbt":scheduler_p
     }
     
     ######### Reporters ########
@@ -96,24 +96,25 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
      #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
     
     ######### tune.with_parameters inception net #######
-    trainable1 = tune.with_parameters(
+    trainable = tune.with_parameters(
         fit.train_fn,
+        model_arch=arch,
         data_dir=data_dir,
         num_epochs=num_epochs,
         num_gpus=1)
     analysis = tune.run(
-        trainable1,
+        trainable,
         resources_per_trial={
             #"cpu": 4,
             "gpu": 1
         },
         local_dir="../analysis/results",
         #verbose=2,
-        config=config_inc,
-        model_arch=arch,
-        scheduler=scheduler_switch[optim] if optim,
-        metric="loss" if not optim,
-        mode="min" if not optim,
+        config=config_inc if arch=='inc' else config_res,
+        #model_arch=arch,
+        scheduler=scheduler_switch[optim],# if optim,
+       # metric="loss" if not optim,
+       # mode="min" if not optim,
         #progress_reporter=reporter_inc,
         num_samples=num_samples,
         name="tune-"+arch+"-"+optim)
@@ -122,8 +123,8 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
 
 
 if __name__ == "__main__":
-    main(num_samples=40, num_epochs=35, folder="Dataset", arch='res', optim="asha")
-    main(num_samples=40, num_epochs=35, folder="Dataset", arch='inc', optim='asha')
+    main(num_samples=4, num_epochs=35, folder="Dataset", arch='res', optim="asha")
+    main(num_samples=4, num_epochs=35, folder="Dataset", arch='inc', optim='asha')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='alex', opt='asha')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='vgg', opt='asha')
 

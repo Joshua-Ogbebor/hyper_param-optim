@@ -53,7 +53,7 @@ class Resnet_Classifier(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         x, y = train_batch
-        logits = self.forward(x)
+        logits = self.forward(x.float())
         #loss = F.nll_loss(logits, y)
         
         y=y.long()
@@ -66,13 +66,14 @@ class Resnet_Classifier(pl.LightningModule):
 
     def validation_step(self, val_batch, batch_idx):
         x, y = val_batch
-        logits = self.forward(x)
+        logits = self.forward(x.float())
         #loss = F.nll_loss(logits, y)
         y=y.long()
         loss=self.losss(logits,y)
         
         acc = self.accuracy(logits, y)
-        
+        self.log("val_loss_init", loss, on_step=True, on_epoch=True, sync_dist=True)
+        self.log("val_accuracy_init", acc, on_step=True, on_epoch=True, sync_dist=True)
         return {"val_loss": loss, "val_accuracy": acc}
     
     def test_step(self, batch, batch_idx):
@@ -84,8 +85,9 @@ class Resnet_Classifier(pl.LightningModule):
             [x["val_loss"] for x in outputs]).mean()
         avg_acc = torch.stack(
             [x["val_accuracy"] for x in outputs]).mean()
-        self.log("val_loss", avg_loss,sync_dist=True)
-        self.log("val_accuracy", avg_acc,sync_dist=True)
+        if self.trainer.is_global_zero:
+            self.log("val_loss", avg_loss,rank_zero_only=True)
+            self.log("val_accuracy", avg_acc,rank_zero_only=True)
 
          
 

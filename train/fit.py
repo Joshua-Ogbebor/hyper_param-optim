@@ -14,16 +14,15 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 
 def model_name (model_arch):
-   model={'inc':inception_net.Googlenet_Classifier,
+   return {'inc':inception_net.Googlenet_Classifier,
     'res':residual_net.Resnet_Classifier,
 #    'alex': ,
 #    'vgg': 
-   }
-   return model[model_arch]
+   }[model_arch]
 ####### fit net using ASHA scheduler, or random search  #######
 
 def train_fn(config, model_arch, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0, checkpoint_dir=None):
-   dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)
+   dm = datamodule.ImgData(num_workers=16, batch_size=config["batch_size"], data_dir=data_dir)
    model = model_name(model_arch)(config,  dm.num_classes, data_dir)
    metrics = {"loss": "val_loss", "acc": "val_accuracy"}
    pl.seed_everything(42, workers=True)
@@ -42,7 +41,7 @@ def train_fn(config, model_arch, data_dir=os.path.join(os.getcwd(), "Dataset") ,
 
 ###### fit inception net using PBT scheduler ######
 def train_fn_pbt(config,model_arch, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
-   dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)    
+   dm = datamodule.ImgData(num_workers=8, batch_size=config["batch_size"], data_dir=data_dir)    
    metrics = {"loss": "val_loss", "acc": "val_accuracy"}
    pl.seed_everything(42, workers=True)
    kwargs = {
@@ -74,7 +73,7 @@ def train_fn_pbt(config,model_arch, data_dir=os.path.join(os.getcwd(), "Dataset"
 ###### fit resnet using PBT scheduler ########    
 
 def train_fn_res_pbt(config, data_dir=os.path.join(os.getcwd(), "Dataset") , num_epochs=60, num_gpus=0,  checkpoint_dir=None):
-   dm = datamodule.ImgData(num_workers=0, batch_size=config["batch_size"], data_dir=data_dir)    
+   dm = datamodule.ImgData(num_workers=8, batch_size=config["batch_size"], data_dir=data_dir)    
    metrics = {"loss": "val_loss", "acc": "val_accuracy"}
    pl.seed_everything(42, workers=True)
    kwargs = {

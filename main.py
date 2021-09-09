@@ -14,52 +14,7 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
     os.environ["SLURM_JOB_NAME"] = "bash"
     data_dir = os.path.join(os.getcwd(), folder)
        
-    ######## Config for architectures ############
-    config_inc = {
-
-        "lr": tune.loguniform(1e-4, 1e-1),
-        "mm":tune.choice([0.6,0.9,1.2]),
-        "dp":tune.choice([0,0.9,0.995]),
-        "wD":tune.choice([0.000008,0.00001,0.00003 ]),
-        "depth":tune.choice([1,2,3]),
-        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
-        "batch_size":tune.choice([16,32,48]),
-        "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1":0.9 ,
-        "b2":0.999 ,
-        "eps":1e-08 ,
-        "rho":0.9
-    }
-    config_res = {
-
-        "lr": tune.loguniform(1e-4, 1e-1),
-        "mm":tune.choice([0.6,0.9,1.2]),
-        "dp":tune.choice([0,0.9,0.995]),
-        "wD":tune.choice([0.000008,0.00001,0.00003 ]),
-        "bloc_1":tune.choice([64,128,256,512]),
-        "bloc_2":tune.choice([64,128,256,512]),
-        #"bloc_3":tune.choice([64,128,256,512]),
-        #"bloc_4":tune.choice([64,128,256,512]),
-        #"bloc_2":0,
-        "bloc_3":0,
-        "bloc_4":0,
-        "depth_1":tune.choice([1,2,3]),
-        "depth_2":tune.choice([1,2,3]),
-        #"depth_3":tune.choice([1,2,3]),
-        #"depth_4":tune.choice([1,2,3]),
-        #"depth_2":0,
-        "depth_3":0,
-        "depth_4":0,
-        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
-        "batch_size":tune.choice([32, 64, 128]),
-        "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1":0.9 ,
-        "b2":0.999 ,
-        "eps":1e-08 ,
-        "rho":0.9
-    }
-    
-    
+   
     ######## ASHA Scheduler #################
     scheduler_a = ASHAScheduler(
         max_t=num_epochs,
@@ -105,12 +60,12 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
     analysis = tune.run(
         trainable,
         resources_per_trial={
-            #"cpu": 4,
+            "cpu": 24,
             "gpu": 1
         },
         local_dir="../analysis/results",
         #verbose=2,
-        config=config_inc if arch=='inc' else config_res,
+        config=config_dict(arch),
         #model_arch=arch,
         scheduler=scheduler_switch[optim],# if optim,
        # metric="loss" if not optim,
@@ -121,10 +76,67 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
 
     print(analysis.best_config)
 
+def config_dict (arch):
+     ######## Config for architectures ############
+    config_inc = {
+
+        "lr": tune.loguniform(1e-4, 1e-1),
+        "mm":tune.choice([0.6,0.9,1.2]),
+        "dp":tune.choice([0,0.9,0.995]),
+        "wD":tune.choice([0.000008,0.00001,0.00003 ]),
+        "depth":tune.choice([4,5,6]),
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+        "batch_size":tune.choice([128,192,256]),
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1":0.9 ,
+        "b2":0.999 ,
+        "eps":1e-08 ,
+        "rho":0.9
+    }
+    config_res = {
+
+        "lr":tune.loguniform(1e-4, 1e-1),
+        "mm":tune.choice([0.6,0.9,1.2]),
+        "dp":tune.choice([0,0.9,0.995]),
+        "wD":tune.choice([0.000008,0.00001,0.00003 ]),
+        "bloc_1":tune.choice([64,128,256,512]),
+        "bloc_2":tune.choice([64,128,256,512]),
+        "bloc_3":tune.choice([64,128,256,512]),
+        "bloc_4":tune.choice([64,128,256,512]),
+        #"bloc_2":0,
+        #"bloc_3":0,
+        #"bloc_4":0,
+        "depth_1":tune.choice([1,2,3]),
+        "depth_2":tune.choice([1,2,3]),
+        "depth_3":tune.choice([1,2,3]),
+        "depth_4":tune.choice([1,2,3]),
+        #"depth_2":0,
+        #"depth_3":0,
+        #"depth_4":0,
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+        "batch_size":tune.choice([32, 64, 128]),
+        "opt":tune.choice(['adam','sgd', 'adadelta']),
+        "b1":tune.choice([0.9]),
+        "b2":tune.choice([0.999]),
+        "eps":tune.choice([1e-08]),
+        "rho":tune.choice([0.9])
+    }
+
+    if arch =='inc':
+       config=config_inc
+    elif arch =='res':
+       config =config_res
+    elif arch == 'alex':
+       pass
+    elif arch =='vgg':
+       pass
+    elif arch =='def':
+       pass
+    return config
 
 if __name__ == "__main__":
-    main(num_samples=4, num_epochs=35, folder="Dataset", arch='res', optim="asha")
-    main(num_samples=4, num_epochs=35, folder="Dataset", arch='inc', optim='asha')
+    main(num_samples=4, num_epochs=35, folder="Dataset_new", arch='res', optim="asha")
+    main(num_samples=4, num_epochs=35, folder="Dataset_new", arch='res', optim='asha')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='alex', opt='asha')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='vgg', opt='asha')
 

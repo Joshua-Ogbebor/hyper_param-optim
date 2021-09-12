@@ -1,0 +1,11 @@
+*.txt
+*.tar
+Dataset/
+Dataset_new/
+results/
+logs/
+*deprecated.py
+*.ipynb
+__pycache__/
+pbt/
+dep/

@@ -22,11 +22,10 @@ class VGG(pl.LightningModule):
         config,
         #features: nn.Module,
         num_classes: int = 4,
-        data_dir:str='none',
         init_weights: bool = True
     ) -> None:
         super(VGG, self).__init__()
-        self.data_dir = data_dir or os.path.join(os.getcwd(), "Dataset") 
+        #self.data_dir = data_dir or os.path.join(os.getcwd(), "Dataset") 
         self.lr = config["lr"]
         self.momentum = config["mm"]
         self.damp = config["dp"]

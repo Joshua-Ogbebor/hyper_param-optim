@@ -1,49 +1,103 @@
 import torch
 import torch.nn as nn
-from .utils import load_state_dict_from_url
 from typing import Union, List, D-ict, Any, cast
-
-
+'''Edited. Original was
+https://pytorch.org/vision/stable/_modules/torchvision/models/vgg.html
+'''
 __all__ = [
-    'VGG', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn',
-    'vgg19_bn', 'vgg19',
-]
-
-
-model_urls = {
-    'vgg11': 'https://download.pytorch.org/models/vgg11-8a719046.pth',
-    'vgg13': 'https://download.pytorch.org/models/vgg13-19584684.pth',
-    'vgg16': 'https://download.pytorch.org/models/vgg16-397923af.pth',
-    'vgg19': 'https://download.pytorch.org/models/vgg19-dcbb9e9d.pth',
-    'vgg11_bn': 'https://download.pytorch.org/models/vgg11_bn-6002323d.pth',
-    'vgg13_bn': 'https://download.pytorch.org/models/vgg13_bn-abd245e5.pth',
-    'vgg16_bn': 'https://download.pytorch.org/models/vgg16_bn-6c64b313.pth',
-    'vgg19_bn': 'https://download.pytorch.org/models/vgg19_bn-c79401a0.pth',
+    'VGG', ]
+act_fn_by_name = {
+    "tanh": nn.Tanh,
+    "relu": nn.ReLU,
+    "leaky_relu": nn.LeakyReLU,
+    "gelu": nn.GELU,
+    "selu": nn.SELU,
+    "linear": nn.Identity
 }
 
-
-class VGG(nn.Module):
+class VGG(pl.LightningModule):
 
     def __init__(
         self,
-        features: nn.Module,
-        num_classes: int = 1000,
+        config,
+        #features: nn.Module,
+        num_classes: int = 4,
+        data_dir:str='none',
         init_weights: bool = True
     ) -> None:
         super(VGG, self).__init__()
-        self.features = features
+        self.data_dir = data_dir or os.path.join(os.getcwd(), "Dataset") 
+        self.lr = config["lr"]
+        self.momentum = config["mm"]
+        self.damp = config["dp"]
+        self.wghtDcay = config["wD"]
+        self.optim_name=config["opt"]
+        self.act_fn_name= config["actvn"] ################################################
+        self.act_fn=act_fn_by_name[self.act_fn_name]               
+        self.accuracy = torchmetrics.Accuracy()        
+        self.losss = nn.CrossEntropyLoss()
+        self.betas=(config["b1"],config["b2"])
+        self.eps=config["eps"]
+        self.rho=config["rho"]
+        self.features = make_layers(cfg=config['vgg_config'],batch_norm=config['batch_norm'],self.act_fn)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
-            nn.ReLU(True),
+            self.act_fn(True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
-            nn.ReLU(True),
+            self.act_fn(True),
             nn.Dropout(),
             nn.Linear(4096, num_classes),
         )
         if init_weights:
             self._initialize_weights()
+        
+
+    def configure_optimizers(self):
+        optim={
+            'sgd':torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.momentum, dampening=self.damp, weight_decay=self.wghtDcay),
+            'adam':torch.optim.Adam(self.parameters(), lr=self.lr, betas=self.betas, eps=self.eps, weight_decay=self.wghtDcay),
+            'adadelta':torch.optim.Adadelta(self.parameters(), lr=self.lr, rho=self.rho, eps=self.eps, weight_decay=self.wghtDcay)
+        }
+        return optim[self.optim_name]
+
+    def training_step(self, train_batch, batch_idx):
+        x, y = train_batch
+        logits = self.forward(x.float())
+       # print(x,y,logits)
+        
+        y=y.long()
+        loss=self.losss(logits,y)
+        
+        acc = self.accuracy(logits, y)
+        self.log("train_loss", loss,on_step=True, on_epoch=True,sync_dist=True)
+        self.log("train_accuracy", acc,on_step=True, on_epoch=True, sync_dist=True)
+        return loss
+
+    def validation_step(self, val_batch, batch_idx):
+        x, y = val_batch
+        logits = self.forward(x.float())
+        y=y.long()
+        loss=self.losss(logits,y)
+        acc = self.accuracy(logits, y)
+        self.log("val_loss_init", loss,on_step=True, on_epoch=True,sync_dist=True)
+        self.log("val_accuracy_init", acc,on_step=True, on_epoch=True,sync_dist=True)
+        return {"val_loss": loss, "val_accuracy": acc}
+
+    def test_step(self, batch, batch_idx):
+        # Here we just reuse the validation_step for testing
+        return self.validation_step(batch, batch_idx)
+
+    def validation_epoch_end(self, outputs):
+        avg_loss = torch.stack(
+            [x["val_loss"] for x in outputs]).mean()
+        avg_acc = torch.stack(
+            [x["val_accuracy"] for x in outputs]).mean()
+        if self.trainer.is_global_zero:
+            self.log("val_loss", avg_loss,rank_zero_only=True)
+            self.log("val_accuracy", avg_acc,rank_zero_only=True)
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
@@ -66,7 +120,7 @@ class VGG(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False) -> nn.Sequential:
+def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False,act_fn) -> nn.Sequential:
     layers: List[nn.Module] = []
     in_channels = 3
     for v in cfg:
@@ -76,9 +130,9 @@ def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False) -> nn.Sequ
             v = cast(int, v)
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
-                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+                layers += [conv2d, nn.BatchNorm2d(v), act_fn(inplace=True)]
             else:
-                layers += [conv2d, nn.ReLU(inplace=True)]
+                layers += [conv2d, act_fn(inplace=True)]
             in_channels = v
     return nn.Sequential(*layers)
 
@@ -101,97 +155,3 @@ def _vgg(arch: str, cfg: str, batch_norm: bool, pretrained: bool, progress: bool
         model.load_state_dict(state_dict)
     return model
 
-
-[docs]def vgg11(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 11-layer model (configuration "A") from
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg11', 'A', False, pretrained, progress, **kwargs)
-
-
-
-[docs]def vgg11_bn(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 11-layer model (configuration "A") with batch normalization
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg11_bn', 'A', True, pretrained, progress, **kwargs)
-
-
-
-[docs]def vgg13(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 13-layer model (configuration "B")
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg13', 'B', False, pretrained, progress, **kwargs)
-
-
-
-[docs]def vgg13_bn(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 13-layer model (configuration "B") with batch normalization
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg13_bn', 'B', True, pretrained, progress, **kwargs)
-
-
-
-[docs]def vgg16(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 16-layer model (configuration "D")
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg16', 'D', False, pretrained, progress, **kwargs)
-
-
-
-[docs]def vgg16_bn(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 16-layer model (configuration "D") with batch normalization
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg16_bn', 'D', True, pretrained, progress, **kwargs)
-
-
-
-[docs]def vgg19(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 19-layer model (configuration "E")
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg19', 'E', False, pretrained, progress, **kwargs)
-
-
-
-[docs]def vgg19_bn(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
-    r"""VGG 19-layer model (configuration 'E') with batch normalization
-    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_.
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _vgg('vgg19_bn', 'E', True, pretrained, progress, **kwargs)

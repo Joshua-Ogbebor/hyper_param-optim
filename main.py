@@ -30,7 +30,7 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
             "mm":[0.6,0.9,1.2],
             "dp":[0,0.9,0.995],
             "wD":[0.000008,0.00001,0.00003 ],
-            "batch_size": [32, 48]
+            "batch_size": [32, 48, 96]
         },
         metric="loss",
         mode="min"
@@ -63,10 +63,9 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
             "cpu": 24,
             "gpu": 1
         },
-        local_dir="../analysis/results",
+        local_dir="../analyses/results",
         #verbose=2,
-        config=config_dict(arch),
-        #model_arch=arch,
+        config=config_dict(arch,optim),
         scheduler=scheduler_switch[optim],# if optim,
        # metric="loss" if not optim,
        # mode="min" if not optim,
@@ -76,21 +75,21 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
 
     print(analysis.best_config)
 
-def config_dict (arch):
+def config_dict (arch,optim):
      ######## Config for architectures ############
     config_inc = {
 
         "lr": tune.loguniform(1e-4, 1e-1),
         "mm":tune.choice([0.6,0.9,1.2]),
         "dp":tune.choice([0,0.9,0.995]),
-        "wD":tune.choice([0.000008,0.00001,0.00003 ]),
-        "depth":tune.choice([4,5,6]),
+        "wD":tune.choice([0,0.000008,0.00001,0.00003 ]),
+        "depth":tune.choice([1,2,3,4,5]),
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
-        "batch_size":tune.choice([128,192,256]),
+        "batch_size":tune.choice([48,64,96]),
         "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1":0.9 ,
+        "b1": tune.choice([0.9]),
         "b2":0.999 ,
-        "eps":1e-08 ,
+        "eps":tune.loguniform(1e-08 ,1e-04),
         "rho":0.9
     }
     config_res = {
@@ -98,7 +97,7 @@ def config_dict (arch):
         "lr":tune.loguniform(1e-4, 1e-1),
         "mm":tune.choice([0.6,0.9,1.2]),
         "dp":tune.choice([0,0.9,0.995]),
-        "wD":tune.choice([0.000008,0.00001,0.00003 ]),
+        "wD":tune.choice([0,0.000008,0.00001,0.00003 ]),
         "bloc_1":tune.choice([64,128,256,512]),
         "bloc_2":tune.choice([64,128,256,512]),
         "bloc_3":tune.choice([64,128,256,512]),
@@ -108,24 +107,62 @@ def config_dict (arch):
         #"bloc_4":0,
         "depth_1":tune.choice([1,2,3]),
         "depth_2":tune.choice([1,2,3]),
-        "depth_3":tune.choice([1,2,3]),
-        "depth_4":tune.choice([1,2,3]),
+        #"depth_3":tune.choice([1,2,3]),
+        #"depth_4":tune.choice([1,2,3]),
         #"depth_2":0,
-        #"depth_3":0,
-        #"depth_4":0,
+        "depth_3":0,
+        "depth_4":0,
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
-        "batch_size":tune.choice([32, 64, 128]),
+        "batch_size":tune.choice([96, 64, 128]),
         "opt":tune.choice(['adam','sgd', 'adadelta']),
         "b1":tune.choice([0.9]),
         "b2":tune.choice([0.999]),
-        "eps":tune.choice([1e-08]),
+        "eps":tune.loguniform(1e-08,1e-04),
+        "rho":tune.choice([0.9])
+    }
+    config_inc_pbt = {
+        "lr": 1e-4,
+        "mm": 0.6,
+        "dp":0,
+        "wD": 0.000008,
+        "depth":tune.choice([1,2,3]),
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+        "batch_size": 64,
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1": tune.choice([0.9]),
+        "b2": tune.choice([0.999]),
+        "eps":tune.loguniform(1e-08 ,1e-04),
+        "rho":tune.choice([0.9])
+
+    }
+
+
+    config_res_pbt = {
+        "lr": 1e-4,
+        "mm": 0.6,
+        "dp":0,
+        "wD": 0.000008,
+        "bloc_1":tune.choice([64,128,256,512]),
+        "bloc_2":tune.choice([64,128,256,512]),
+        "bloc_3":tune.choice([64,128,256,512]),
+        "bloc_4":tune.choice([64,128,256,512]),
+        "depth_1":tune.choice([1,2]),
+        "depth_2":tune.choice([1,2,0]),
+        "depth_3":tune.choice([1,2,0]),
+        "depth_4":0,#tune.choice([1,2,0]),
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+        "batch_size": 64,
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1": tune.choice([0.9]),
+        "b2": tune.choice([0.999]),
+        "eps":tune.loguniform(1e-08 ,1e-04),
         "rho":tune.choice([0.9])
     }
 
     if arch =='inc':
-       config=config_inc
+       config=config_inc_pbt if optim=="pbt" else config_inc
     elif arch =='res':
-       config =config_res
+       config =config_res_pbt if optim=="pbt" else config_res
     elif arch == 'alex':
        pass
     elif arch =='vgg':
@@ -135,8 +172,8 @@ def config_dict (arch):
     return config
 
 if __name__ == "__main__":
-    main(num_samples=4, num_epochs=35, folder="Dataset_new", arch='res', optim="asha")
-    main(num_samples=4, num_epochs=35, folder="Dataset_new", arch='res', optim='asha')
+    main(num_samples=100, num_epochs=35, folder="Dataset_new", arch='res', optim="asha")
+    #main(num_samples=4, num_epochs=35, folder="Dataset_new", arch='res', optim='asha')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='alex', opt='asha')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='vgg', opt='asha')
 

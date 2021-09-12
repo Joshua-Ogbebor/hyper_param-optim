@@ -1,11 +1,22 @@
+"""Edited by Joshua Ogbebor. 
+Original was: https://pytorch.org/vision/stable/_modules/torchvision/models/vgg.html
+"""
+
 import torch
 import torch.nn as nn
 from typing import Union, List, D-ict, Any, cast
-'''Edited. Original was
-https://pytorch.org/vision/stable/_modules/torchvision/models/vgg.html
-'''
+from types import SimpleNamespace
+
+#from functools import partial
+#from collections import OrderedDict
+#from torch.nn import functional as F
+import pytorch_lightning as pl
+import torchmetrics
+from ray import tune
+from ray.tune.integration.pytorch_lightning import TuneReportCallback
+
 __all__ = [
-    'VGG', ]
+    'VGG']
 act_fn_by_name = {
     "tanh": nn.Tanh,
     "relu": nn.ReLU,

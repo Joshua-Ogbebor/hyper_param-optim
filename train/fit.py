@@ -1,13 +1,10 @@
 from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneReportCheckpointCallback
-import torch
-import os
+import torch, os, sys
 import tempfile
 from ray import tune
 import pytorch_lightning as pl
-import sys
 sys.path.append("..")
-from model import residual_net 
-from model import inception_net
+from model import residual_net, inception_net, alex_net
 from data import datamodule
 from pytorch_lightning.plugins import DDPPlugin
 from pytorch_lightning.loggers import TensorBoardLogger

@@ -4,7 +4,7 @@ Original was: https://pytorch.org/vision/stable/_modules/torchvision/models/vgg.
 
 import torch
 import torch.nn as nn
-from typing import Union, List, D-ict, Any, cast
+from typing import Union, List, Dict, Any, cast
 from types import SimpleNamespace
 
 #from functools import partial
@@ -49,7 +49,7 @@ class VGG(pl.LightningModule):
         self.betas=(config["b1"],config["b2"])
         self.eps=config["eps"]
         self.rho=config["rho"]
-        self.features = make_layers(cfg=config['vgg_config'],batch_norm=config['batch_norm'],self.act_fn)
+        self.features = make_layers(cfg=cfgs[config['vgg_config']],act_fn=self.act_fn,batch_norm=config['batch_norm'])
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
@@ -130,7 +130,7 @@ class VGG(pl.LightningModule):
                 nn.init.constant_(m.bias, 0)
 
 
-def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False,act_fn) -> nn.Sequential:
+def make_layers(cfg: List[Union[str, int]],act_fn, batch_norm: bool = False) -> nn.Sequential:
     layers: List[nn.Module] = []
     in_channels = 3
     for v in cfg:

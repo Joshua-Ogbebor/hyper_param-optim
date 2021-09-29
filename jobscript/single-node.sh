@@ -24,7 +24,7 @@ export NCCL_IB_DISABLE=1
 # execute code
 #time python -u main-rand.py &> ../analysis/output/sgl-tune-rand.txt
 #time python -u main-asha.py &> ../analysis/output/sgl-tune-asha.txt
-time python -u main.py &> ../analyses/output/tune-res-asha.txt
+time python -u main.py &> ../analyses/output/tune-alex-asha.txt
 
 # Mark the time it finishes.
 date

@@ -1,6 +1,5 @@
 import sys
 from data import datamodule
-from model.residual_net import Resnet_Classifier
 from train import fit
 import torch
 import os
@@ -13,8 +12,8 @@ from ray import tune
 def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None):
     os.environ["SLURM_JOB_NAME"] = "bash"
     data_dir = os.path.join(os.getcwd(), folder)
-       
-   
+
+
     ######## ASHA Scheduler #################
     scheduler_a = ASHAScheduler(
         max_t=num_epochs,
@@ -40,7 +39,7 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         "asha":scheduler_a,
         "pbt":scheduler_p
     }
-    
+
     ######### Reporters ########
     #reporter_res = CLIReporter(
      #   parameter_columns=["bloc_1", "bloc_2", "lr", "batch_size"],
@@ -49,7 +48,7 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
     #reporter_inc = CLIReporter(
      #   parameter_columns=["layer_1_size", "layer_2_size", "lr", "batch_size"],
      #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
-    
+
     ######### tune.with_parameters inception net #######
     trainable = tune.with_parameters(
         fit.train_fn,
@@ -57,7 +56,7 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         data_dir=data_dir,
         num_epochs=num_epochs,
         num_gpus=1)
-    analysis = tune.run(
+     analysis = tune.run(
         trainable,
         resources_per_trial={
             "cpu": 24,
@@ -87,11 +86,44 @@ def config_dict (arch,optim):
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size":tune.choice([48,64,96]),
         "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1": tune.choice([0.9]),
+        "b1": 0.9,
         "b2":0.999 ,
         "eps":tune.loguniform(1e-08 ,1e-04),
         "rho":0.9
     }
+    config_vgg = {
+
+        "lr": tune.loguniform(1e-4, 1e-1),
+        "mm":tune.choice([0.6,0.9,1.2]),
+        "dp":tune.choice([0,0.9,0.995]),
+        "wD":tune.choice([0,0.000008,0.00001,0.00003 ]),
+        "vgg_config":tune.choice(['A','B','D','E']),
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+        "batch_size":tune.choice([48,64,96]),
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1":0.9,
+        "b2":0.999 ,
+        "eps":tune.loguniform(1e-08 ,1e-04),
+        "batch_norm": tune.choice([True,False]),
+        "rho":0.9
+    }
+    config_alex = {
+
+        "lr": tune.loguniform(1e-4, 1e-1),
+        "mm":tune.choice([0.6,0.9,1.2]),
+        "dp":tune.choice([0,0.9,0.995]),
+        "wD":tune.choice([0,0.000008,0.00001,0.00003 ]),
+        #"depth":tune.choice([1,2,3,4,5]),
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+         "batch_size":tune.choice([48,64,96]),
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1": 0.9,
+        "b2":0.999 ,
+        "eps":tune.loguniform(1e-08 ,1e-04),
+        "rho":0.9
+    }
+
+
     config_res = {
 
         "lr":tune.loguniform(1e-4, 1e-1),
@@ -129,13 +161,43 @@ def config_dict (arch,optim):
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size": 64,
         "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1": tune.choice([0.9]),
+        "b1": 0.9,
         "b2": tune.choice([0.999]),
         "eps":tune.loguniform(1e-08 ,1e-04),
         "rho":tune.choice([0.9])
 
     }
+    config_inc_alex = {
+        "lr": 1e-4,
+        "mm": 0.6,
+        "dp":0,
+        "wD": 0.000008,
+        #"depth":tune.choice([1,2,3]),
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+        "batch_size": 64,
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1": 0.9,
+        "b2": 0.999,
+        "eps":tune.loguniform(1e-08 ,1e-04),
+        "rho":0.9
 
+    }
+    config_inc_vgg = {
+        "lr": 1e-4,
+        "mm": 0.6,
+        "dp":0,
+        "wD": 0.000008,
+        "vgg_config":tune.choice(['A','B','D','E']),
+        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
+        "batch_size": 64,
+        "opt": tune.choice(['adam','sgd', 'adadelta']),
+        "b1": 0.9,
+        "b2": 0.999,
+        "eps":tune.loguniform(1e-08 ,1e-04),
+        "rho":0.9,
+        "batch_norm": tune.choice([True,False]),
+
+    }
 
     config_res_pbt = {
         "lr": 1e-4,
@@ -153,10 +215,10 @@ def config_dict (arch,optim):
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size": 64,
         "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1": tune.choice([0.9]),
-        "b2": tune.choice([0.999]),
+        "b1": 0.9,
+        "b2": 0.999,
         "eps":tune.loguniform(1e-08 ,1e-04),
-        "rho":tune.choice([0.9])
+        "rho":0.9
     }
 
     if arch =='inc':
@@ -164,16 +226,17 @@ def config_dict (arch,optim):
     elif arch =='res':
        config =config_res_pbt if optim=="pbt" else config_res
     elif arch == 'alex':
-       pass
+       config =config_alex_pbt if optim=="pbt" else config_alex
     elif arch =='vgg':
-       pass
+       config =config_vgg_pbt if optim=="pbt" else config_vgg
     elif arch =='def':
        pass
     return config
 
 if __name__ == "__main__":
-    main(num_samples=100, num_epochs=35, folder="Dataset_new", arch='res', optim="asha")
-    #main(num_samples=4, num_epochs=35, folder="Dataset_new", arch='res', optim='asha')
-    #main(num_samples=40, num_epochs=35, folder="Dataset", arch='alex', opt='asha')
-    #main(num_samples=40, num_epochs=35, folder="Dataset", arch='vgg', opt='asha')
+    main(num_samples=100, num_epochs=35, folder="Dataset_new", arch='alex', optim="asha")
+    #main(num_samples=100, num_epochs=35, folder="Dataset_new", arch='alex', optim='asha')
+    #main(num_samples=40, num_epochs=35, folder="Dataset", arch='alex', opt='pbt')
+    #main(num_samples=40, num_epochs=35, folder="Dataset", arch='vgg', opt='pbt')
 
+    

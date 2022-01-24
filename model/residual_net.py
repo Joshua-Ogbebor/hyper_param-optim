@@ -355,10 +355,11 @@ import os
 import torchmetrics
 from ray import tune
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
+from .model_tools import deepnet
 
 
 
-class Resnet_Classifier(pl.LightningModule):
+class Resnet_Classifier(deepnet):
     def __init__(self, config, n_classes=4, data_dir=None, in_channels = 3):
         super(Resnet_Classifier, self).__init__()
         

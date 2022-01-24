@@ -3,7 +3,7 @@ from data import datamodule
 from train import fit
 import torch
 import os
-#from ray.tune import CLIReporter
+
 from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
 import torchmetrics
 from ray import tune
@@ -39,16 +39,6 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         "asha":scheduler_a,
         "pbt":scheduler_p
     }
-
-    ######### Reporters ########
-    #reporter_res = CLIReporter(
-     #   parameter_columns=["bloc_1", "bloc_2", "lr", "batch_size"],
-     #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
-
-    #reporter_inc = CLIReporter(
-     #   parameter_columns=["layer_1_size", "layer_2_size", "lr", "batch_size"],
-     #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
-
     ######### tune.with_parameters inception net #######
     trainable = tune.with_parameters(
         fit.train_fn,

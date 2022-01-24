@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from .utils import load_state_dict_from_url
+#from .utils import load_state_dict_from_url
 from typing import Optional, Tuple, List, Callable, Any
 
 __all__ = ['GoogLeNet', 'googlenet', "GoogLeNetOutputs", "_GoogLeNetOutputs"]
@@ -25,7 +25,7 @@ _GoogLeNetOutputs = GoogLeNetOutputs
 
 
 
-[docs]def googlenet(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> "GoogLeNet":
+def googlenet(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> "GoogLeNet":
     r"""GoogLeNet (Inception v1) model architecture from
     `"Going Deeper with Convolutions" <http://arxiv.org/abs/1409.4842>`_.
 

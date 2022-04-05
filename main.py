@@ -36,6 +36,10 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
     os.environ["SLURM_JOB_NAME"] = "bash"
     data_dir = os.path.join(os.getcwd(), folder)
     ###### scheduler switcher ##########
+    if optim=="pbt":
+          from config_pbt import scheduler_p
+    else: 
+          from config_asha import scheduler_a
     scheduler_switch={
         "asha":scheduler_a,
         "pbt":scheduler_p

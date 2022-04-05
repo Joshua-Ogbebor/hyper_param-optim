@@ -7,20 +7,30 @@ import os
 from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
 import torchmetrics
 from ray import tune
-from config import *
+
 
 def config_dict (arch,optim):
      ######## Config for architectures ############
-    if arch =='inc':
-       config=config_inc_pbt if optim=="pbt" else config_inc
-    elif arch =='res':
-       config =config_res_pbt if optim=="pbt" else config_res
-    elif arch == 'alex':
-       config =config_alex_pbt if optim=="pbt" else config_alex
-    elif arch =='vgg':
-       config =config_vgg_pbt if optim=="pbt" else config_vgg
-    elif arch =='def':
-       pass
+    if optim=="pbt":
+       from config_pbt import *
+       if arch=="inc":
+          config=config_inc_pbt
+       if arch=="res":
+          config=config_res_pbt
+       if arch=="alex":
+          config=config_alex_pbt
+       if arch=="vgg":
+          config=config_vgg_pbt
+    else:
+       from config_asha import *
+       if arch=="inc":
+          config=config_inc
+       if arch=="res":
+          config=config_res
+       if arch=="alex":
+          config=config_alex
+       if arch=="vgg":
+          config=config_vgg
     return config
 
 def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None):

@@ -12,7 +12,7 @@ from config_asha import scheduler_a
 def config_dict (arch,optim):
      ######## Config for architectures ############
     if optim=="pbt":
-       from config_pbt import config_inc_pbt,config_res_pbt,config_alex_pbt,config_vgg_pbt,scheduler_p
+       from config_pbt import config_inc_pbt,config_res_pbt,config_alex_pbt,config_vgg_pbt
        if arch=="inc":
           config=config_inc_pbt
        if arch=="res":
@@ -22,7 +22,7 @@ def config_dict (arch,optim):
        if arch=="vgg":
           config=config_vgg_pbt
     else:
-       from config_asha import config_inc,config_res,config_alex,config_vgg,scheduler_a
+       from config_asha import config_inc,config_res,config_alex,config_vgg
        if arch=="inc":
           config=config_inc
        if arch=="res":

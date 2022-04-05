@@ -1,9 +1,9 @@
-import sys
+import sys, comet_ml
 from data import datamodule
 from train import fit
 import torch
 import os
-#from ray.tune import CLIReporter
+#from private.comet_key import key
 from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
 import torchmetrics
 from ray import tune
@@ -39,16 +39,6 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         "asha":scheduler_a,
         "pbt":scheduler_p
     }
-
-    ######### Reporters ########
-    #reporter_res = CLIReporter(
-     #   parameter_columns=["bloc_1", "bloc_2", "lr", "batch_size"],
-     #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
-
-    #reporter_inc = CLIReporter(
-     #   parameter_columns=["layer_1_size", "layer_2_size", "lr", "batch_size"],
-     #   metric_columns=["loss", "mean_accuracy", "training_iteration"])
-
     ######### tune.with_parameters inception net #######
     trainable = tune.with_parameters(
         fit.train_fn,
@@ -56,18 +46,18 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
         data_dir=data_dir,
         num_epochs=num_epochs,
         num_gpus=1)
-     analysis = tune.run(
+    analysis = tune.run(
         trainable,
         resources_per_trial={
-            "cpu": 24,
+            "cpu": 16,
             "gpu": 1
         },
-        local_dir="../analyses/results",
+        local_dir="../tune-2-analyses/results",
         #verbose=2,
         config=config_dict(arch,optim),
         scheduler=scheduler_switch[optim],# if optim,
-       # metric="loss" if not optim,
-       # mode="min" if not optim,
+        #metric="loss" ,
+        #mode="min" ,
         #progress_reporter=reporter_inc,
         num_samples=num_samples,
         name="tune-"+arch+"-"+optim)
@@ -87,8 +77,6 @@ def config_dict (arch,optim):
         "batch_size":tune.choice([48,64,96]),
         "opt": tune.choice(['adam','sgd', 'adadelta']),
         "b1": 0.9,
-<<<<<<< HEAD
-=======
         "b2":0.999 ,
         "eps":tune.loguniform(1e-08 ,1e-04),
         "rho":0.9
@@ -120,67 +108,30 @@ def config_dict (arch,optim):
          "batch_size":tune.choice([48,64,96]),
         "opt": tune.choice(['adam','sgd', 'adadelta']),
         "b1": 0.9,
->>>>>>> 43e9b2048f02a4a427d7136f37b38b0809017528
         "b2":0.999 ,
         "eps":tune.loguniform(1e-08 ,1e-04),
         "rho":0.9
     }
-<<<<<<< HEAD
-    config_vgg = {
-
-        "lr": tune.loguniform(1e-4, 1e-1),
-        "mm":tune.choice([0.6,0.9,1.2]),
-        "dp":tune.choice([0,0.9,0.995]),
-        "wD":tune.choice([0,0.000008,0.00001,0.00003 ]),
-        "vgg_config":tune.choice(['A','B','D','E']),
-        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
-        "batch_size":tune.choice([48,64,96]),
-        "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1":0.9,
-        "b2":0.999 ,
-        "eps":tune.loguniform(1e-08 ,1e-04),
-        "batch_norm": tune.choice([True,False]),
-        "rho":0.9
-    }
-    config_alex = {
-
-        "lr": tune.loguniform(1e-4, 1e-1),
-        "mm":tune.choice([0.6,0.9,1.2]),
-        "dp":tune.choice([0,0.9,0.995]),
-        "wD":tune.choice([0,0.000008,0.00001,0.00003 ]),
-        #"depth":tune.choice([1,2,3,4,5]),
-        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
-        "batch_size":tune.choice([48,64,96]),
-        "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1": 0.9,
-        "b2":0.999 ,
-        "eps":tune.loguniform(1e-08 ,1e-04),
-        "rho":0.9
-    }
-=======
->>>>>>> 43e9b2048f02a4a427d7136f37b38b0809017528
-
 
     config_res = {
-
         "lr":tune.loguniform(1e-4, 1e-1),
         "mm":tune.choice([0.6,0.9,1.2]),
         "dp":tune.choice([0,0.9,0.995]),
         "wD":tune.choice([0,0.000008,0.00001,0.00003 ]),
-        "bloc_1":tune.choice([64,128,256,512]),
-        "bloc_2":tune.choice([64,128,256,512]),
-        "bloc_3":tune.choice([64,128,256,512]),
-        "bloc_4":tune.choice([64,128,256,512]),
+        "blk":tune.choice(['Bottleneck','BasicBlock']),
+        "groups":tune.choice([32,64,128,256]),
+        "wpg":tune.choice([1,2,3,4,5,6,7,8]),
+        #"bloc_4":tune.choice([64,128,256,512]),
         #"bloc_2":0,
         #"bloc_3":0,
         #"bloc_4":0,
         "depth_1":tune.choice([1,2,3]),
         "depth_2":tune.choice([1,2,3]),
-        #"depth_3":tune.choice([1,2,3]),
-        #"depth_4":tune.choice([1,2,3]),
+        "depth_3":tune.choice([1,2,3]),
+        "depth_4":tune.choice([1,2,3]),
         #"depth_2":0,
-        "depth_3":0,
-        "depth_4":0,
+        #"depth_3":0,
+        #"depth_4":0,
         "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
         "batch_size":tune.choice([96, 64, 128]),
         "opt":tune.choice(['adam','sgd', 'adadelta']),
@@ -204,7 +155,7 @@ def config_dict (arch,optim):
         "rho":tune.choice([0.9])
 
     }
-    config_inc_alex = {
+    config_alex_pbt = {
         "lr": 1e-4,
         "mm": 0.6,
         "dp":0,
@@ -217,10 +168,8 @@ def config_dict (arch,optim):
         "b2": 0.999,
         "eps":tune.loguniform(1e-08 ,1e-04),
         "rho":0.9
-<<<<<<< HEAD
-
     }
-    config_inc_vgg = {
+    config_vgg_pbt = {
         "lr": 1e-4,
         "mm": 0.6,
         "dp":0,
@@ -236,26 +185,6 @@ def config_dict (arch,optim):
         "batch_norm": tune.choice([True,False]),
 
     }
-=======
-
-    }
-    config_inc_vgg = {
-        "lr": 1e-4,
-        "mm": 0.6,
-        "dp":0,
-        "wD": 0.000008,
-        "vgg_config":tune.choice(['A','B','D','E']),
-        "actvn":tune.choice(['relu','leaky_relu','selu','linear','tanh']),
-        "batch_size": 64,
-        "opt": tune.choice(['adam','sgd', 'adadelta']),
-        "b1": 0.9,
-        "b2": 0.999,
-        "eps":tune.loguniform(1e-08 ,1e-04),
-        "rho":0.9,
-        "batch_norm": tune.choice([True,False]),
-
-    }
->>>>>>> 43e9b2048f02a4a427d7136f37b38b0809017528
 
     config_res_pbt = {
         "lr": 1e-4,
@@ -284,11 +213,7 @@ def config_dict (arch,optim):
     elif arch =='res':
        config =config_res_pbt if optim=="pbt" else config_res
     elif arch == 'alex':
-<<<<<<< HEAD
-       config =config_alex_pbt if optim=="pbt" else config_alex 
-=======
        config =config_alex_pbt if optim=="pbt" else config_alex
->>>>>>> 43e9b2048f02a4a427d7136f37b38b0809017528
     elif arch =='vgg':
        config =config_vgg_pbt if optim=="pbt" else config_vgg
     elif arch =='def':
@@ -296,9 +221,7 @@ def config_dict (arch,optim):
     return config
 
 if __name__ == "__main__":
-    main(num_samples=100, num_epochs=35, folder="Dataset_new", arch='alex', optim="asha")
-    #main(num_samples=100, num_epochs=35, folder="Dataset_new", arch='alex', optim='asha')
+    main(num_samples=100, num_epochs=35, folder="Sort-Dataset", arch='res', optim="asha")
+    #main(num_samples=100, num_epochs=35, folder="Sort-Dataset", arch='alex', optim='asha')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='alex', opt='pbt')
     #main(num_samples=40, num_epochs=35, folder="Dataset", arch='vgg', opt='pbt')
-
-    

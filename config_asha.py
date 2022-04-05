@@ -1,6 +1,7 @@
 from ray import tune
 from ray.tune.schedulers import ASHAScheduler
 ######## ASHA Scheduler #################
+from main import num_epochs
 scheduler_a = ASHAScheduler(
         max_t=num_epochs,
         metric="loss",

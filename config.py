@@ -1,3 +1,5 @@
+from ray import tune
+
 ######## ASHA Scheduler #################
 scheduler_a = ASHAScheduler(
         max_t=num_epochs,

@@ -9,24 +9,23 @@ import torchmetrics
 from ray import tune
 from config import *
 
+def config_dict (arch,optim):
+     ######## Config for architectures ############
+    if arch =='inc':
+       config=config_inc_pbt if optim=="pbt" else config_inc
+    elif arch =='res':
+       config =config_res_pbt if optim=="pbt" else config_res
+    elif arch == 'alex':
+       config =config_alex_pbt if optim=="pbt" else config_alex
+    elif arch =='vgg':
+       config =config_vgg_pbt if optim=="pbt" else config_vgg
+    elif arch =='def':
+       pass
+    return config
 
 def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None):
     os.environ["SLURM_JOB_NAME"] = "bash"
     data_dir = os.path.join(os.getcwd(), folder)
-
-    ######## PBT Scheduler ##################
-    scheduler_p = PopulationBasedTraining(
-        perturbation_interval=4,
-        hyperparam_mutations={
-            "lr": tune.loguniform(1e-4, 1e-1),
-            "mm":[0.6,0.9,1.2],
-            "dp":[0,0.9,0.995],
-            "wD":[0.000008,0.00001,0.00003 ],
-            "batch_size": [32, 48, 96]
-        },
-        metric="loss",
-        mode="min"
-        )
     ###### scheduler switcher ##########
     scheduler_switch={
         "asha":scheduler_a,
@@ -57,19 +56,6 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
 
     print(analysis.best_config)
 
-def config_dict (arch,optim):
-     ######## Config for architectures ############
-    if arch =='inc':
-       config=config_inc_pbt if optim=="pbt" else config_inc
-    elif arch =='res':
-       config =config_res_pbt if optim=="pbt" else config_res
-    elif arch == 'alex':
-       config =config_alex_pbt if optim=="pbt" else config_alex
-    elif arch =='vgg':
-       config =config_vgg_pbt if optim=="pbt" else config_vgg
-    elif arch =='def':
-       pass
-    return config
 
 if __name__ == "__main__":
     main(num_samples=100, num_epochs=35, folder="Sort-Dataset", arch='res', optim="asha")

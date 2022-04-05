@@ -1,3 +1,11 @@
+######## ASHA Scheduler #################
+scheduler_a = ASHAScheduler(
+        max_t=num_epochs,
+        metric="loss",
+        mode="min",
+        grace_period=1,
+        reduction_factor=2)
+
 config_inc = {
 
         "lr": tune.loguniform(1e-4, 1e-1),

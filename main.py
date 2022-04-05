@@ -11,7 +11,6 @@ from ray import tune
 def config_dict (arch,optim):
      ######## Config for architectures ############
     if optim=="pbt":
-       from ray.tune.schedulers import PopulationBasedTraining
        from config_pbt import *
        if arch=="inc":
           config=config_inc_pbt
@@ -22,7 +21,6 @@ def config_dict (arch,optim):
        if arch=="vgg":
           config=config_vgg_pbt
     else:
-       from ray.tune.schedulers import ASHAScheduler
        from config_asha import *
        if arch=="inc":
           config=config_inc

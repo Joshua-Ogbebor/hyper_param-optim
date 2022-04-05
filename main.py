@@ -14,14 +14,6 @@ def main (num_samples=40, num_epochs=50, folder="Dataset", arch='inc',optim=None
     os.environ["SLURM_JOB_NAME"] = "bash"
     data_dir = os.path.join(os.getcwd(), folder)
 
-
-    ######## ASHA Scheduler #################
-    scheduler_a = ASHAScheduler(
-        max_t=num_epochs,
-        metric="loss",
-        mode="min",
-        grace_period=1,
-        reduction_factor=2)
     ######## PBT Scheduler ##################
     scheduler_p = PopulationBasedTraining(
         perturbation_interval=4,

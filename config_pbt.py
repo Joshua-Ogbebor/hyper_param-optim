@@ -1,4 +1,5 @@
 from ray import tune
+from ray.tune.schedulers import PopulationBasedTraining
 ######## PBT Scheduler ##################
 scheduler_p = PopulationBasedTraining(
         perturbation_interval=4,
